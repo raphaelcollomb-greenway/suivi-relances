@@ -612,7 +612,7 @@ function renderFactures(){
     const chH=inv.chorus&&inv.chorus!=='-'&&inv.chorus?`<span class="badge bc" style="font-size:10px">${inv.chorus}</span>`:'<span style="color:var(--t3)">—</span>';
     const prev=cmtTxt?cmtTxt.substring(0,38)+(cmtTxt.length>38?'…':''):'Ajouter…';
     const dotH=hasLocal?`<span class="saved-dot" title="Commentaire enregistré dans le sheet"></span>`:'';
-    h+=`<tr>
+    h+=`<tr style="cursor:pointer" onclick="openModal('${inv.facture.replace(/'/g,"\\'")}')">
       <td><div style="font-weight:500">${inv.client}</div><div style="font-size:11px;color:var(--t3)">${inv.entite}</div></td>
       <td style="font-family:monospace;font-size:12px">${inv.facture}</td>
       <td style="color:var(--t2);font-size:12px">${inv.dateEch}</td>
@@ -620,7 +620,7 @@ function renderFactures(){
       <td class="tr" style="color:var(--red);font-weight:500">${fmt(inv.solde)}</td>
       <td>${stH}</td><td>${chH}</td><td>${retH}</td>
       <td class="cmt-cell">
-        <span class="cmt-preview ${cmtTxt?'':'empty'}" onclick="openModal('${inv.facture.replace(/'/g,"\\'")}')">
+        <span class="cmt-preview ${cmtTxt?'':'empty'}">
           ${prev}${dotH}
         </span>
         ${lc&&lc.user?`<div class="cmt-user">${lc.user}${lc.date?' · '+lc.date:''}</div>`:''}
@@ -780,7 +780,11 @@ async function init(){
   // Get user info
   try {
     const info = await getUserInfo();
-    const name = info.given_name || info.name || info.email || 'Utilisateur';
+    const EMAIL_NAMES = {
+      'raphael.collomb@greenway.care': 'Raphael',
+      'yannick.agbohoun@greenway.care': 'Yannick'
+    };
+    const name = EMAIL_NAMES[info.email] || info.given_name || info.name || info.email || 'Utilisateur';
     localStorage.setItem('gwc_user', name);
     document.getElementById('userBadge').textContent = name;
     document.getElementById('userBadge').style.display = 'block';
