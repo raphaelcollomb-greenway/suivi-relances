@@ -303,7 +303,7 @@ const savedUser = localStorage.getItem('gwc_user') || '';
 function startAuth() {
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
-    redirect_uri: "https://raphaelcollomb-greenway.github.io/suivi-relances/",
+    redirect_uri: window.location.href.split('?')[0].split('#')[0],
     response_type: 'token',
     scope: SCOPES,
     prompt: 'select_account'
@@ -366,13 +366,25 @@ function colLetter(n) { // 1-indexed -> letter
   let r=''; while(n){let m=(n-1)%26;r=String.fromCharCode(65+m)+r;n=Math.floor((n-1)/26);}return r;
 }
 function parseDate(v) {
-  if (!v) return null;
-  if (typeof v === 'number') {
-    // Excel serial date
-    const d = new Date((v - 25569) * 86400 * 1000);
-    return d;
-  }
-  return new Date(v);
+  if (!v && v !== 0) return null;
+  try {
+    if (typeof v === 'number') {
+      // Google Sheets serial date (days since 1899-12-30)
+      const d = new Date(Date.UTC(1899, 11, 30) + v * 86400000);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    if (typeof v === 'string') {
+      // Try ISO first, then DD/MM/YYYY
+      let d = new Date(v);
+      if (!isNaN(d.getTime())) return d;
+      const parts = v.split('/');
+      if (parts.length === 3) {
+        d = new Date(Date.UTC(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0])));
+        return isNaN(d.getTime()) ? null : d;
+      }
+    }
+  } catch(e) {}
+  return null;
 }
 function fmtDate(d) {
   if (!d) return '';
@@ -380,7 +392,7 @@ function fmtDate(d) {
 }
 function fmtDateShort(d) {
   if (!d) return '';
-  return d.toISOString().slice(0,10);
+  try { return d.toISOString().slice(0,10); } catch(e) { return ''; }
 }
 
 async function loadSheetData() {
@@ -432,7 +444,7 @@ async function loadSheetData() {
       chorus:   String(row[28] || '').trim(),
       sheetCmt: sheetCmt,
       retard:   retard,
-      moisFact: dateFact ? dateFact.toISOString().slice(0,7) : ''
+      moisFact: dateFact ? (fmtDateShort(dateFact).slice(0,7) || '') : ''
     });
   });
 
@@ -490,7 +502,7 @@ function renderDashboard() {
     if(String(row[20]||'').trim()==='Payée'){
       const d=parseDate(row[7]);
       if(!d)return;
-      const m=d.toISOString().slice(0,7);
+      const m=fmtDateShort(d).slice(0,7);
       paidMap[m]=(paidMap[m]||0)+(parseFloat(row[15])||0);
     }
   });
